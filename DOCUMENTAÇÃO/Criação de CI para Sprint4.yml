@@ -1,0 +1,39 @@
+variables:
+- name: BuildParameters.wrapperScript
+  value: gradlew
+- name: BuildParameters.tasks
+  value: build
+trigger:
+  branches:
+    include:
+    - refs/heads/main
+name: $(date:yyyyMMdd)$(rev:.r)
+jobs:
+- job: Job_1
+  displayName: Buid do projeto
+  pool:
+    vmImage: windows-latest
+  steps:
+  - checkout: self
+    fetchDepth: 1
+  - task: Gradle@3
+    displayName: Build do Gradle
+    condition: succeededOrFailed()
+    inputs:
+      wrapperScript: $(BuildParameters.wrapperScript)
+      cwd: .
+      tasks: $(BuildParameters.tasks)
+      jdkVersion: 1.17
+  - task: CopyFiles@2
+    displayName: Copiar arquivo para diretorio principal
+    condition: succeededOrFailed()
+    inputs:
+      SourceFolder: $(system.defaultworkingdirectory)
+      Contents: '**/*.jar'
+      TargetFolder: $(build.artifactstagingdirectory)
+  - task: PublishBuildArtifacts@1
+    displayName: Publicar Artefato para CD
+    condition: succeededOrFailed()
+    inputs:
+      PathtoPublish: $(build.artifactstagingdirectory)
+...
